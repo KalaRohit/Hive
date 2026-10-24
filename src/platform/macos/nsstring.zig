@@ -4,6 +4,7 @@
 
 const Objc = @import("objc.zig");
 const std = @import("std");
+const builtin = @import("builtin");
 
 const NSString = @This();
 
@@ -64,6 +65,7 @@ pub fn deinit(self: *NSString) void {
 
 
 test "NSString implementation and usage" {
+    if (builtin.os.tag != .macos) return error.SkipZigTest;
     const string: NSString = try .fromUTF8("ExampleString");
     try std.testing.expect(std.mem.eql(u8, string.getZigString(), "ExampleString"));
 }
