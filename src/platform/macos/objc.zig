@@ -1,10 +1,20 @@
 //! Integrate with Apple's Objective C runtime using these Zig functions.
 //! Only adding functions on a need by need basis, so the full set is not
 //! implemented.
+//!
 //! Documentation of these functions can be found here: https://developer.apple.com/documentation/objectivec/
+//!
+//! Additionally, this stack overflow is very useful for understanding the underlying mechanisms:  https://stackoverflow.com/questions/30269329/creating-a-windowed-application-in-pure-c-on-macos
 const c       = @import("C");
 const std     = @import("std");
 const builtin = @import("builtin");
+
+pub const ClassName = enum {
+    NSApplication,
+    NSWindow,
+    NSView,
+    NSEvent,
+};
 
 /// Returns the class definition of a specified class.
 pub fn getClass(className: [:0]const u8) ?*anyopaque {
@@ -58,10 +68,10 @@ test "Objective C Runtime: ensure we can select methods from classes" {
 ///
 /// You can specify the return type with comptime Return. They are usually raw ptrs.
 pub fn dynamicDispatch(
-    comptime Return: type,
-    self: ?*anyopaque,
-    op:   ?*anyopaque,
-    args: anytype,
+    comptime Return: type, // TODO:: Maybe remove
+    selector: ?*anyopaque,
+    method:   ?*anyopaque,
+    args:     anytype,
 ) Return {
     const info = @typeInfo(@TypeOf(args)).@"struct";
 
@@ -91,7 +101,7 @@ pub fn dynamicDispatch(
     );
 
     const clsMsgSend: *const Fn = @ptrCast(&c.objc_msgSend);
-    return @call(.auto, clsMsgSend, .{self, op} ++ args);
+    return @call(.auto, clsMsgSend, .{selector, method} ++ args);
 }
 
 test "Objective C Runtime: example creating an application using raw objective c methods" {

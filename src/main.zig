@@ -1,38 +1,21 @@
 const std = @import("std");
 const Io = std.Io;
 const C = @import("C");
+const NSApplication = @import("platform/macos/application.zig");
+const NSWindow      = @import("platform/macos/window.zig");
+const Objc          = @import("platform/macos/objc.zig");
 
 pub fn main(init: std.process.Init) !void {
-    const cls_msg = @as(*const fn (?*anyopaque, ?*anyopaque, ...) callconv(.c) ?*anyopaque, @ptrCast(&C.objc_msgSend));
-
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-    _ = cls_msg(C.objc_getClass("NSApplication"), C.sel_registerName("sharedApplication"));
-    while (true) {}
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
-
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
-    }
-
-    // In order to do I/O operations need an `Io` instance.
-    const io = init.io;
-
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
-
-    try stdout_writer.flush(); // Don't forget to flush!
+    var app:    NSApplication = .init(init.gpa, .{});
+    const entry = try app.createWindow(.{});
+    _ = entry;
+    app.run();
 }
 
 test "simple test" {
     _ = @import("./platform/macos/objc.zig");
+    _ = @import("./platform/macos/application.zig");
+    _ = @import("./platform/macos/nsstring.zig");
 }
 
 // Keeping the fuzzing example here for now so i can review it later.
