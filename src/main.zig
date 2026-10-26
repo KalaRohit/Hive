@@ -7,7 +7,9 @@ const Objc          = @import("platform/macos/objc.zig");
 
 pub fn main(init: std.process.Init) !void {
     var app:    NSApplication = .init(init.gpa, .{});
-    const windowHandle = try app.createWindow(.{});
+    const windowHandle = try app.createWindow(.{
+        .windowTitle = "Hive"
+    });
     _ = windowHandle;
     app.run();
 }

@@ -16,6 +16,8 @@ pub const ClassName = enum {
     NSEvent,
 };
 
+pub const NULL: ?*anyopaque = @as(?*anyopaque, null);
+
 /// Returns the class definition of a specified class.
 pub fn getClass(className: [:0]const u8) ?*anyopaque {
     return c.objc_getClass(
@@ -44,7 +46,7 @@ test "Objective C Runtime: ensure we can find classes used in the application" {
 /// The actual function is called: sel_getUid.
 ///
 /// Read more here: https://developer.apple.com/documentation/objectivec/sel_getuid(_:)
-pub fn getMethodSelectorForUniqueId(methodName: [:0]const u8) ?*anyopaque {
+pub fn getSelector(methodName: [:0]const u8) ?*anyopaque {
     return c.sel_getUid(
         methodName
     );
@@ -54,7 +56,7 @@ test "Objective C Runtime: ensure we can select methods from classes" {
     if (builtin.os.tag != .macos) return error.SkipZigTest;
 
     try std.testing.expect(
-        getMethodSelectorForUniqueId("sharedApplication") != null
+        getSelector("sharedApplication") != null
     );
 }
 
@@ -110,23 +112,23 @@ test "Objective C Runtime: example creating an application using raw objective c
     const NsActivationPolicyRegular: c_int = 0;
 
     const appClassRef     = getClass("NSApplication");
-    const methodRef       = getMethodSelectorForUniqueId("sharedApplication");
+    const methodRef       = getSelector("sharedApplication");
     const app: *anyopaque = dynamicDispatch(*anyopaque, appClassRef, methodRef, .{});
     dynamicDispatch(
         void,
         app,
-        getMethodSelectorForUniqueId("setActivationPolicy:"), .{NsActivationPolicyRegular}
+        getSelector("setActivationPolicy:"), .{NsActivationPolicyRegular}
     );
     const windowAlloc   = dynamicDispatch(
         *anyopaque,
         getClass("NSWindow"),
-        getMethodSelectorForUniqueId("alloc"),
+        getSelector("alloc"),
         .{}
     );
     const WindowOpts = extern struct {
-        x: c_longdouble,
-        y: c_longdouble,
-        width: c_longdouble,
+        x:      c_longdouble,
+        y:      c_longdouble,
+        width:  c_longdouble,
         height: c_longdouble
     };
     const frameRect = WindowOpts{
@@ -138,7 +140,7 @@ test "Objective C Runtime: example creating an application using raw objective c
     const window = dynamicDispatch(
         *anyopaque,
         windowAlloc,
-        getMethodSelectorForUniqueId("initWithContentRect:styleMask:backing:defer:"), .{
+        getSelector("initWithContentRect:styleMask:backing:defer:"), .{
             frameRect,
             @as(c_int, @intCast(0)),
             @as(c_int, @intCast(0)),

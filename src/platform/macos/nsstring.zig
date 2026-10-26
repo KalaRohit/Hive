@@ -19,14 +19,14 @@ pub fn fromUTF8(bytes: []const u8) !NSString {
     const allocated = Objc.dynamicDispatch(
         ?*anyopaque,
         cls,
-        Objc.getMethodSelectorForUniqueId("alloc"),
+        Objc.getSelector("alloc"),
         .{},
     ) orelse return error.OutOfMemory;
 
     const initialized = Objc.dynamicDispatch(
         ?*anyopaque,
         allocated,
-        Objc.getMethodSelectorForUniqueId(
+        Objc.getSelector(
             "initWithBytes:length:encoding:"
         ),
         .{ bytes.ptr, bytes.len, utf8_encoding },
@@ -45,7 +45,7 @@ pub fn getZigString(self: *const NSString) []const u8 {
     const ptr = Objc.dynamicDispatch(
         [*:0]const u8,
         self.handle,
-        Objc.getMethodSelectorForUniqueId("UTF8String"),
+        Objc.getSelector("UTF8String"),
         .{},
     );
 
@@ -56,7 +56,7 @@ pub fn deinit(self: *NSString) void {
     Objc.dynamicDispatch(
         void,
         self.handle,
-        Objc.getMethodSelectorForUniqueId("release"),
+        Objc.getSelector("release"),
         .{},
     );
 

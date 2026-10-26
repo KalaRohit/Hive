@@ -65,7 +65,7 @@ pub fn init(
     const windowAllocRef = Objc.dynamicDispatch(
         *anyopaque,
         Objc.getClass(@tagName(Objc.ClassName.NSWindow)),
-        Objc.getMethodSelectorForUniqueId("alloc"),
+        Objc.getSelector("alloc"),
         .{}
     );
     const buffered: c_int = 0;
@@ -74,7 +74,7 @@ pub fn init(
     const windowHandle = Objc.dynamicDispatch(
         *anyopaque,
         windowAllocRef,
-        Objc.getMethodSelectorForUniqueId("initWithContentRect:styleMask:backing:defer:"),
+        Objc.getSelector("initWithContentRect:styleMask:backing:defer:"),
         .{
             internalWindowOption,
             @as(usize, @intCast(mask)),
@@ -85,25 +85,21 @@ pub fn init(
     Objc.dynamicDispatch(
         void,
         windowHandle,
-        Objc.getMethodSelectorForUniqueId("setTitle:"),
+        Objc.getSelector("setTitle:"),
         .{
-            Objc.dynamicDispatch(
-                *anyopaque,
-                Objc.getClass("NSString"), // TODO:: break out into helper! // Also double allocation here which is not properly freed.
-                Objc.getMethodSelectorForUniqueId("stringWithUTF8String:"), .{"Pure Zig App"}
-            )
+            title.getHandle()
         }
     );
 
     Objc.dynamicDispatch(
         void,
         windowHandle,
-        Objc.getMethodSelectorForUniqueId("makeKeyAndOrderFront:"), .{
-            @as(?*anyopaque, null),
+        Objc.getSelector("makeKeyAndOrderFront:"), .{
+            Objc.NULL,
         }
     );
 
-    return MacOsWindow{
+    return MacOsWindow {
         .allocator = allocator,
         .handle = windowHandle,
         .height = options.height,
@@ -113,7 +109,7 @@ pub fn init(
 }
 
 pub fn close(self: *const MacOsWindow) void {
-    Objc.dynamicDispatch(void, self.handle, Objc.getMethodSelectorForUniqueId("close"),.{});
+    Objc.dynamicDispatch(void, self.handle, Objc.getSelector("close"), .{});
 }
 
 pub fn deinit(self: *MacOsWindow) void {

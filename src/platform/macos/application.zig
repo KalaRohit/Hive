@@ -42,17 +42,17 @@ freeSlots: std.ArrayList(usize)     = .empty,
 
 pub fn init(allocator: std.mem.Allocator, options: MacOsApplicationOptions) MacOSApplication {
     const appClassRef     = Objc.getClass(@tagName(Objc.ClassName.NSApplication));
-    const methodRef       = Objc.getMethodSelectorForUniqueId("sharedApplication");
+    const methodRef       = Objc.getSelector("sharedApplication");
     const app: *anyopaque = Objc.dynamicDispatch(*anyopaque, appClassRef, methodRef, .{});
     Objc.dynamicDispatch(
         void,
         app,
-        Objc.getMethodSelectorForUniqueId("setActivationPolicy:"),
+        Objc.getSelector("setActivationPolicy:"),
         .{
             @intFromEnum(options.activationPolicy)
         }
     );
-    Objc.dynamicDispatch(void, app, Objc.getMethodSelectorForUniqueId("activateIgnoringOtherApps:"), .{ true });
+    Objc.dynamicDispatch(void, app, Objc.getSelector("activateIgnoringOtherApps:"), .{ true });
 
     return MacOSApplication{
         .app_handle       = app,
@@ -109,11 +109,11 @@ test "MacOS Application: add and remove windows" {
 }
 
 pub fn run(self: *const @This()) void {
-    Objc.dynamicDispatch(void, self.app_handle, Objc.getMethodSelectorForUniqueId("run"), .{});
+    Objc.dynamicDispatch(void, self.app_handle, Objc.getSelector("run"), .{});
 }
 
 pub fn deinit(self: *const MacOSApplication) void {
-    const terminateRef = Objc.getMethodSelectorForUniqueId("terminate:");
+    const terminateRef = Objc.getSelector("terminate:");
     Objc.dynamicDispatch(void, self.app_handle, terminateRef, .{});
 }
 
