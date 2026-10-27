@@ -1,12 +1,12 @@
-const std = @import("std");
-const Io = std.Io;
-const C = @import("C");
+const std           = @import("std");
+const Io            = std.Io;
+const C             = @import("C");
 const NSApplication = @import("platform/macos/application.zig");
 const NSWindow      = @import("platform/macos/window.zig");
 const Objc          = @import("platform/macos/objc.zig");
 
 pub fn main(init: std.process.Init) !void {
-    var app:    NSApplication = .init(init.gpa, .{});
+    var app: NSApplication = .init(init.gpa, .{});
     const windowHandle = try app.createWindow(.{
         .windowTitle = "Hive"
     });

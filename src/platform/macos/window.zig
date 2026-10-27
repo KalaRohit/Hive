@@ -48,20 +48,19 @@ pub fn init(
     errdefer title.deinit();
 
     const internalWindowOption = MacosWindowOption{
-        .x = 0,
-        .y = 0,
+        .x      = 0,
+        .y      = 0,
         .height = options.height,
         .width  = options.width,
     };
     const styleMask: MacosWindowStyleMask = .{
-        .borderless = options.bitmask.borderless,
-        .fullscreen = options.bitmask.fullscreen,
-        .closeable = options.bitmask.closeable,
+        .borderless  = options.bitmask.borderless,
+        .fullscreen  = options.bitmask.fullscreen,
+        .closeable   = options.bitmask.closeable,
         .minimizable = options.bitmask.minimizable,
-        .resizeable = options.bitmask.resizeable,
-        .titled = options.bitmask.titled,
+        .resizeable  = options.bitmask.resizeable,
+        .titled      = options.bitmask.titled,
     }; // TODO:: Need to find a way for setting the rest of the flags
-
     const windowAllocRef = Objc.dynamicDispatch(
         *anyopaque,
         Objc.getClass(@tagName(Objc.ClassName.NSWindow)),
@@ -101,15 +100,20 @@ pub fn init(
 
     return MacOsWindow {
         .allocator = allocator,
-        .handle = windowHandle,
-        .height = options.height,
-        .width = options.width,
-        .title = title
+        .handle    = windowHandle,
+        .height    = options.height,
+        .width     = options.width,
+        .title     = title
     };
 }
 
 pub fn close(self: *const MacOsWindow) void {
-    Objc.dynamicDispatch(void, self.handle, Objc.getSelector("close"), .{});
+    Objc.dynamicDispatch(
+        void, 
+        self.handle, 
+        Objc.getSelector("close"), 
+        .{}
+    );
 }
 
 pub fn deinit(self: *MacOsWindow) void {
