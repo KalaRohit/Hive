@@ -2,19 +2,21 @@ const std = @import("std");
 
 pub const StrategyOnOverflow = enum {
     DiscardWrite,
-    ReplaceEarliest,
-    ReplaceLatest,
 };
 
 /// Create a fixed size RingBuffer type. The buffer is
-/// allocated on the heap once on init. 
-/// 
+/// allocated on the heap once on init.
+///
 /// 0 -> [ 0, 0, 0, 0 ] -> jump to 0
-/// 
+///
 ///           ^ writer
 ///
 ///        ^ reader
 pub fn RingBuffer(T: type, comptime size: usize) type {
+    comptime {
+        if (size == 0)              @compileError("RingBuffer requires size to be > 0, however, we got 0");
+        if (size & (size - 1) != 0) @compileError("RingBuffer requires a power of 2 to prevent incorrect wrapping");
+    }
     return struct {
         container:        []T,
         readers:          std.ArrayList(std.atomic.Value(usize)) = .empty,
@@ -32,9 +34,9 @@ pub fn RingBuffer(T: type, comptime size: usize) type {
         }
 
         /// Returns a usize which you can use with
-        /// read() to read back values and increment 
+        /// read() to read back values and increment
         /// reader pointers.
-        /// 
+        ///
         /// Note that general access of container should
         /// be entirely avoided, as that is not an
         /// intended way for reading data.
@@ -48,26 +50,29 @@ pub fn RingBuffer(T: type, comptime size: usize) type {
             return rVal;
         }
 
-        pub fn read(self: *@This(), sequence: usize) T {
+        /// Read into the buffer, returning null if we are advancing past the writer.
+        pub fn read(self: *@This(), sequence: usize) ?T {
             const seqItem   = self.readers.items[sequence].load(.acquire);
-            const readValue =  seqItem % self.container.len;
-            self.readers.items[sequence].store(seqItem + 1, .release);
 
-            return self.container[readValue];
+            if (seqItem == self.writer.load(.acquire)) {
+                return null;
+            }
+            const value = self.container[seqItem % self.container.len];
+            self.readers.items[sequence].store(seqItem +% 1, .release);
+
+            return value;
         }
 
 
         pub fn write(self: *@This(), val: T) void {
             const writeVal:      usize = self.writer.load(.acquire);
             const writePosition: usize = writeVal % self.container.len;
-            
+
             for (self.readers.items) | *reader | {
                 // Case of a slow reader...
                 if (writeVal -% reader.load(.acquire) >= self.container.len) {
                     switch (self.overflowStrategy) {
                         .DiscardWrite    => return,
-                        .ReplaceEarliest => {},
-                        .ReplaceLatest   => {}
                     }
                 }
             }
@@ -86,9 +91,9 @@ pub fn RingBuffer(T: type, comptime size: usize) type {
 }
 
 test "RingBuffer: sample usage" {
-    var buff: RingBuffer(f32, 100) = try .init(std.testing.allocator);
+    var buff: RingBuffer(f32, 128) = try .init(std.testing.allocator);
     defer buff.deinit(std.testing.allocator);
-    
+
 
     const i = try buff.createReader(std.testing.allocator);
     buff.write(120);
@@ -103,8 +108,18 @@ test "RingBuffer: sample usage" {
     try std.testing.expect(jValue == 133);
 }
 
+test "RingBuffer: readers do not read uninit values" {
+    var buff: RingBuffer(f32, 128) = try .init(std.testing.allocator);
+    defer buff.deinit(std.testing.allocator);
+
+    const i = try buff.createReader(std.testing.allocator);
+    const value = buff.read(i);
+
+    try std.testing.expectEqual(null, value);
+}   
+
 test "RingBuffer: fill buffer" {
-    var buff: RingBuffer(f32, 100) = try .init(std.testing.allocator);
+    var buff: RingBuffer(f32, 128) = try .init(std.testing.allocator);
     defer buff.deinit(std.testing.allocator);
 
     const readerValue = try buff.createReader(std.testing.allocator);
@@ -120,9 +135,31 @@ test "RingBuffer: fill buffer" {
 }
 
 test "RingBuffer: multi-reader single-writer read in order no overflow" {
+    const allocator: std.mem.Allocator = std.testing.allocator;
+    var threaded: std.Io.Threaded      = .init(allocator, .{});
+    defer threaded.deinit();
 
+    const io = threaded.io();
+
+    var buff: RingBuffer(f32, 128) = try .init(std.testing.allocator);
+    defer buff.deinit(std.testing.allocator);
+
+    var group = std.Io.Group.init;
+
+    for (0..5) |taskId| {
+        try group.concurrent(io, dummyReadFn, .{ taskId, &buff });
+    }
+    try group.await(io);
+}
+
+fn dummyReadFn(threadId: usize, buffer: *RingBuffer(f32, 128)) void {
+    for (1..5) |idx| {
+        buffer.write(
+            @floatFromInt(20 * threadId + idx)
+        );
+    }
 }
 
 test "RingBuffer: multi-reader single-writer read in order overflow" {
-    
+
 }

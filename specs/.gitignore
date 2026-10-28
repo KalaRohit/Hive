@@ -1,0 +1,15 @@
+# TLC state, output, and generated trace files (in any spec folder).
+.tlc/
+states/
+*.out
+*_TTrace_*.tla
+*_TTrace_*.bin
+*_trace_*.tlc
+
+# Generated LaTeX/PDF exports and intermediate files.
+*.tex
+*.pdf
+*.aux
+*.log
+*.dvi
+*.synctex.gz
