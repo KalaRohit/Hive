@@ -15,3 +15,8 @@ See [Concurrent.md](RingBuffer/Concurrent.md) for the results and limits.
 
 [RingBufferLiveness.tla](RingBuffer/RingBufferLiveness.tla) includes checks for eventual progress.
 See [Liveness.md](RingBuffer/Liveness.md) for the required scheduling assumptions.
+
+## UI layout
+
+[Layouting](Layouting/README.md) models sizing, word wrapping, height calculation, and draw order.
+It includes [pseudocode](Layouting/Pseudocode.md) and [Clay attribution](Layouting/NOTICE.md).
